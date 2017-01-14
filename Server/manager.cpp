@@ -57,7 +57,6 @@ Frame Manager::make_frame(QPixmap pixmap){
 }
 
 QPixmap Manager::get_desktop_img(){
-    static int i=0;
     QPixmap pixmap{QApplication::primaryScreen()->grabWindow(0)};
     //TODO: 增加鼠标图像
     return pixmap;
