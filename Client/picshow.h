@@ -6,8 +6,6 @@
 #include <dts.h>
 #include <QMutex>
 
-#define MAX_BUFFER_SIZE 20
-
 namespace Ui {
 class PicShow;
 }
@@ -22,6 +20,7 @@ private:
     quint16 listen_port;
     Buffer buffer;
     QMutex buffer_mutex;
+    QPixmap last_pixmap;
 public:
     explicit PicShow(QHostAddress ip, quint16 port,QWidget *parent = 0);
     ~PicShow();
@@ -34,7 +33,7 @@ private slots:
     void clear_broken(unsigned char id);
     void add_package_and_show(const Package &pkg);
     void show_frame(const Frame& frame);
-    QPixmap recover_to_pixmap(const Frame& frame);
+    Data_Package recover_to_data_pkg(const Frame& frame);
 };
 
 #endif // PICSHOW_H

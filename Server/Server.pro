@@ -11,12 +11,14 @@ INCLUDEPATH += $$PWD/../public/
 # Input
 SOURCES += main.cpp \
     sock.cpp \
-    manager.cpp
+    manager.cpp \
+    ../public/globalfunc.cpp
 
 HEADERS += \
     sock.h \
     ../public/dts.h \
-    manager.h
+    manager.h \
+    ../public/globalfunc.h
 
 DESTDIR=$$PWD/../bin
 

@@ -9,7 +9,8 @@ INCLUDEPATH += $$PWD/../public
 # Input
 SOURCES += main.cpp \
     picshow.cpp \
-    sock.cpp
+    sock.cpp \
+    ../public/globalfunc.cpp
 
 FORMS += \
     picshow.ui
@@ -17,7 +18,8 @@ FORMS += \
 HEADERS += \
     picshow.h \
     sock.h \
-    ../public/dts.h
+    ../public/dts.h \
+    ../public/globalfunc.h
 
 DESTDIR=$$PWD/../bin
 

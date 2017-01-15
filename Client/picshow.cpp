@@ -1,9 +1,8 @@
 #include "picshow.h"
 #include "ui_picshow.h"
 #include <algorithm>
-#include <zlib.h>
-
-#define MAX_ZLIB_BUFFER 1024*1024*2
+#include <QPainter>
+#include <globalfunc.h>
 
 PicShow::PicShow(QHostAddress ip, quint16 port, QWidget *parent) :
     QWidget(parent),
@@ -25,6 +24,7 @@ PicShow::~PicShow()
 void PicShow::on_read(){
     Package pkg;
     m_sock.readDatagram(static_cast<char*>(static_cast<void*>(&pkg)),sizeof(Package));
+    qDebug()<<"read "<<pkg.major_id<<pkg.minor_id<<pkg.pk_num<<pkg.curr_length;
     clear_broken(static_cast<unsigned char>((pkg.major_id+MAX_BUFFER_SIZE/2)%256));
     add_package_and_show(pkg);
 }
@@ -50,18 +50,25 @@ void PicShow::add_package_and_show(const Package &pkg){
     bool has_find=false;
     bool has_show=false;
     Frame will_show;
-    for(auto p=buffer.begin();p!=buffer.end();++p){
-        if(p->isEmpty())
-            continue;
-        if(p->at(0).major_id==pkg.major_id){
-            has_find=true;
-            p->push_back(pkg);
-            if(p->size()==pkg.pk_num){
-                will_show=*p;
-                buffer.erase(p);
-                has_show=true;
+    if(pkg.pk_num==1){
+        will_show.push_back(pkg);
+        has_show=true;
+        has_find=true;
+    }else{
+        for(auto p=buffer.begin();p!=buffer.end();++p){
+            if(p->isEmpty())
+                continue;
+            if(p->at(0).major_id==pkg.major_id){
+                has_find=true;
+                p->push_back(pkg);
+                if(p->size()==pkg.pk_num){
+                    qDebug()<<"Will show";
+                    will_show=*p;
+                    buffer.erase(p);
+                    has_show=true;
+                }
+                break;
             }
-            break;
         }
     }
     if(!has_find){
@@ -76,24 +83,38 @@ void PicShow::add_package_and_show(const Package &pkg){
 }
 
 void PicShow::show_frame(const Frame &frame){
-    qDebug()<<"show frame";
-    QPixmap pixmap{recover_to_pixmap(frame)};
-    pixmap=pixmap.scaled(ui->show_lab->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation);
-    ui->show_lab->setPixmap(pixmap);
+    Data_Package data_pkg{recover_to_data_pkg(frame)};
+    if(data_pkg.pixmap.isNull()){
+        qDebug()<<"pixmap Null";
+        return;
+    }
+    if(last_pixmap.isNull()&&data_pkg.full==0){
+        qDebug()<<"last Null && not full";
+        return;
+    }
+    if(last_pixmap.isNull()||data_pkg.full==1){
+        last_pixmap=data_pkg.pixmap;
+    }else{
+        QPainter painter(&last_pixmap);
+        painter.drawPixmap(data_pkg.rect,data_pkg.pixmap);
+    }
+    //TODO 添加鼠标
+    QPixmap tmp_pixmap=last_pixmap.scaled(ui->show_lab->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation);
+    ui->show_lab->setPixmap(tmp_pixmap);
+    qDebug()<<"显示一个Frame";
 }
 
-QPixmap PicShow::recover_to_pixmap(const Frame &frame){
+Data_Package PicShow::recover_to_data_pkg(const Frame &frame){
     Frame t_frame{frame};
     std::sort(t_frame.begin(),t_frame.end(),[](const Package &a,const Package &b){return a.minor_id<b.minor_id;});
     QByteArray ba;
     for(auto &p:t_frame)
         ba.append(static_cast<const char*>(static_cast<const void*>((p.data))),p.curr_length);
-    QByteArray buf;
-    buf.resize(MAX_ZLIB_BUFFER);
-    uLongf destlen=MAX_ZLIB_BUFFER;
-    uncompress(static_cast<Bytef*>(static_cast<void*>(buf.data())),&destlen,static_cast<Bytef*>(static_cast<void*>(ba.data())),ba.size());
-    buf.resize(destlen);
-    QPixmap pixmap;
-    pixmap.loadFromData(buf);
-    return pixmap;
+
+    ba=uncompress(ba);
+
+    Data_Package data_pkg;
+    memmove_s(&data_pkg,sizeof(Data_Package_Without_Pixmap),ba.data(),sizeof(Data_Package_Without_Pixmap));
+    data_pkg.pixmap.loadFromData(ba.right(ba.size()-sizeof(Data_Package_Without_Pixmap)));
+    return data_pkg;
 }

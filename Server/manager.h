@@ -9,7 +9,6 @@
 #include <QTimer>
 #include <QMutex>
 
-#define MAX_BUFFER_SIZE 20
 
 class Manager : public QWidget
 {
@@ -20,11 +19,13 @@ private:
     QHostAddress mcast_addr{"224.0.0.17"};
     QHostAddress local_addr;
     quint16 m_port;
+    QPixmap last_pixmap;
 public:
     explicit Manager(QHostAddress ip, quint16 port, QWidget *parent = 0);
-    Frame make_frame(QPixmap pixmap);
-    QPixmap get_desktop_img();
+    Frame make_frame(const Data_Package &data_pkg);
+    Data_Package get_desktop_img(int full);
     void start_cap();
+    QPixmap get_update(const QPixmap &pix1,const QPixmap &pix2,QRect &rect);
 signals:
 
 public slots:
