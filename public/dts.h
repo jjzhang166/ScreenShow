@@ -1,4 +1,6 @@
 #include <QList>
+#include <QMap>
+#include <QSet>
 
 #define DATA_BUFFER_LEN 1400
 

@@ -9,7 +9,7 @@
 #include <QTimer>
 #include <QMutex>
 
-#define MAX_BUFFER_SIZE 10
+#define MAX_BUFFER_SIZE 20
 
 class Manager : public QWidget
 {
