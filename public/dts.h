@@ -5,7 +5,7 @@
 #include <QRect>
 #include <QPixmap>
 
-#define DATA_BUFFER_LEN 1400
+#define DATA_BUFFER_LEN 450
 
 struct Package{
     unsigned char major_id;
@@ -32,4 +32,5 @@ struct Data_Package_Without_Pixmap{
 }__attribute__ ((aligned(1)));
 
 using Frame=QList<Package>;
-using Buffer=QList<Frame>;
+using SendBuffer=QList<Frame>;
+using RecvBuffer=QMap<unsigned int,Frame>;

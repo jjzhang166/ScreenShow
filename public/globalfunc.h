@@ -4,8 +4,15 @@
 #include "zlib.h"
 #include <QByteArray>
 
-#define MAX_BUFFER_SIZE 100
+#define MAX_BUFFER_SIZE 20
 #define MAX_ZLIB_BUFFER 1024*1024*2
+#define CAST_ADDR "255.255.255.255"
+#define FULL_SCREEEN_COUNT 100
+#define DISTENCE 10
+#define QUALITY 20
+#define CAP_SLEEP 20
+#define IMG_FORMAT "JPEG"
+
 QByteArray compress(const QByteArray &src);
 QByteArray uncompress(const QByteArray &src);
 

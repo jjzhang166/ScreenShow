@@ -8,15 +8,16 @@
 #include <QWidget>
 #include <QTimer>
 #include <QMutex>
+#include <globalfunc.h>
 
 
 class Manager : public QWidget
 {
     Q_OBJECT
 private:
-    Buffer buffer;
+    SendBuffer buffer;
     QMutex buffer_mutex;
-    QHostAddress mcast_addr{"224.0.0.17"};
+    QHostAddress mcast_addr{CAST_ADDR};
     QHostAddress local_addr;
     quint16 m_port;
     QPixmap last_pixmap;

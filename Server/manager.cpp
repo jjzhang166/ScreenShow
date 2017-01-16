@@ -6,8 +6,7 @@
 #include <QThread>
 #include <QScreen>
 #include <globalfunc.h>
-
-#define DISTENCE 5
+#include <QBitmap>
 
 
 Manager::Manager(QHostAddress ip, quint16 port, QWidget *parent) : QWidget(parent),local_addr(ip),m_port(port)
@@ -27,10 +26,12 @@ Manager::Manager(QHostAddress ip, quint16 port, QWidget *parent) : QWidget(paren
             if(!t_frame.isEmpty()){
                 for(auto &p:t_frame){
                     QThread::usleep(1);
-                    qDebug()<<p.major_id<<p.minor_id<<p.pk_num<<p.curr_length;
-                    m_sock.writeDatagram(static_cast<char*>(static_cast<void*>(&p)),sizeof(Package),this->mcast_addr,this->m_port);
+                    m_sock.writeDatagram(static_cast<char*>(static_cast<void*>(&p)),sizeof(Package),QHostAddress::Broadcast,this->m_port);
+                    QThread::usleep(1);
+                    m_sock.writeDatagram(static_cast<char*>(static_cast<void*>(&p)),sizeof(Package),QHostAddress::Broadcast,this->m_port);
+                    QThread::usleep(1);
+                    m_sock.writeDatagram(static_cast<char*>(static_cast<void*>(&p)),sizeof(Package),QHostAddress::Broadcast,this->m_port);
                 }
-                qDebug()<<"发送一个Frame";
             }
             QThread::yieldCurrentThread();
         }
@@ -46,7 +47,7 @@ Frame Manager::make_frame(const Data_Package &data_pkg){
     QByteArray ba;
     QBuffer buf(&ba);
     buf.open(QIODevice::WriteOnly);
-    data_pkg.pixmap.save(&buf,"JPEG",20);
+    data_pkg.pixmap.save(&buf,IMG_FORMAT,QUALITY);
     buf.close();
     QByteArray header;
     QBuffer header_buf(&header);
@@ -54,10 +55,7 @@ Frame Manager::make_frame(const Data_Package &data_pkg){
     header_buf.write(static_cast<const char*>(static_cast<const void*>(&data_pkg)),sizeof(Data_Package_Without_Pixmap));
     header_buf.close();
     ba=header+ba;
-    qDebug()<<"before "<<ba.size();
     ba=compress(ba);
-    qDebug()<<"after "<<ba.size();
-
     size_t block_num=(ba.size()+(DATA_BUFFER_LEN-1))/DATA_BUFFER_LEN;
     Package tmp_pkg;
     Frame ret;
@@ -75,7 +73,6 @@ Frame Manager::make_frame(const Data_Package &data_pkg){
 
 Data_Package Manager::get_desktop_img(int full){
     QPixmap pixmap{QApplication::primaryScreen()->grabWindow(0)};
-    qDebug()<<"Screen "<<pixmap.size();
     Data_Package header;
     header.pos=cursor().pos();
     header.shape=cursor().shape();
@@ -98,19 +95,20 @@ void Manager::start_cap(){
         buffer_mutex.lock();
         if(buffer.size()>MAX_BUFFER_SIZE){
             buffer_mutex.unlock();
-            QThread::yieldCurrentThread();
+            QThread::msleep(CAP_SLEEP);
             continue;
         }
         buffer_mutex.unlock();
-        Frame t_frame{make_frame(get_desktop_img((n=(n+1)%50)==0))};
+        Frame t_frame{make_frame(get_desktop_img((n=(n+1)%FULL_SCREEEN_COUNT)==0))};
         buffer_mutex.lock();
         if(buffer.size()>MAX_BUFFER_SIZE){
             buffer_mutex.unlock();
-            QThread::yieldCurrentThread();
+            QThread::msleep(CAP_SLEEP);
             return;
         }
         buffer.push_back(t_frame);
         buffer_mutex.unlock();
+        QThread::msleep(CAP_SLEEP);
     }
 }
 
@@ -119,8 +117,10 @@ QPixmap Manager::get_update(const QPixmap &pix1, const QPixmap &pix2, QRect &rec
         rect=pix2.rect();
         return pix2;
     }
+
     QImage img1=pix1.toImage();
     QImage img2=pix2.toImage();
+
     auto sz=img1.size();
     int top_point{0};
     int left_point{0};
@@ -172,5 +172,17 @@ QPixmap Manager::get_update(const QPixmap &pix1, const QPixmap &pix2, QRect &rec
         return QPixmap{};
     }
     rect=QRect{left_point,top_point,right_point-left_point,bottom_point-top_point};
+
+    /*
+    auto img1_rect=img1.copy(rect);
+    auto img2_rect=img2.copy(rect);
+    for(int i=0;i<img1_rect.height();++i){
+        for(int j=0;j<img1_rect.width();++j){
+            img1_rect.setPixel(j,i,img1_rect.pixel(j,i)^img2_rect.pixel(j,i));
+
+        }
+    }
+    */
+
     return pix2.copy(rect);
 }

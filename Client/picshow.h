@@ -18,9 +18,10 @@ private:
     Sock m_sock;
     QHostAddress local_addr;
     quint16 listen_port;
-    Buffer buffer;
+    RecvBuffer buffer;
     QMutex buffer_mutex;
     QPixmap last_pixmap;
+    QMap<unsigned char,QSet<unsigned int>> recv_pkg;
 public:
     explicit PicShow(QHostAddress ip, quint16 port,QWidget *parent = 0);
     ~PicShow();

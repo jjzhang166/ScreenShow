@@ -1,7 +1,5 @@
 #include <globalfunc.h>
 
-#define MAX_ZLIB_BUFFER 1024*1024*2
-
 QByteArray compress(const QByteArray &src){
     QByteArray ret;
     ret.resize(compressBound(src.size()));

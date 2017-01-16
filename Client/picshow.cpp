@@ -24,7 +24,6 @@ PicShow::~PicShow()
 void PicShow::on_read(){
     Package pkg;
     m_sock.readDatagram(static_cast<char*>(static_cast<void*>(&pkg)),sizeof(Package));
-    qDebug()<<"read "<<pkg.major_id<<pkg.minor_id<<pkg.pk_num<<pkg.curr_length;
     clear_broken(static_cast<unsigned char>((pkg.major_id+MAX_BUFFER_SIZE/2)%256));
     add_package_and_show(pkg);
 }
@@ -32,21 +31,13 @@ void PicShow::on_read(){
 
 void PicShow::clear_broken(unsigned char id){
     buffer_mutex.lock();
-    for(auto p=buffer.begin();p!=buffer.end();++p){
-        if(p->isEmpty())
-            continue;
-        if(p->at(0).major_id==id){
-            buffer.erase(p);
-            qDebug()<<"delete broken "<<(int)id;
-            break;
-        }
-    }
+    buffer.remove(id);
     buffer_mutex.unlock();
+    recv_pkg.remove(id);
 }
 
 
 void PicShow::add_package_and_show(const Package &pkg){
-    buffer_mutex.lock();
     bool has_find=false;
     bool has_show=false;
     Frame will_show;
@@ -55,28 +46,37 @@ void PicShow::add_package_and_show(const Package &pkg){
         has_show=true;
         has_find=true;
     }else{
-        for(auto p=buffer.begin();p!=buffer.end();++p){
-            if(p->isEmpty())
-                continue;
-            if(p->at(0).major_id==pkg.major_id){
-                has_find=true;
-                p->push_back(pkg);
-                if(p->size()==pkg.pk_num){
-                    qDebug()<<"Will show";
-                    will_show=*p;
-                    buffer.erase(p);
+        if(recv_pkg.find(pkg.major_id)!=recv_pkg.end()){
+            has_find=true;
+            if(recv_pkg[pkg.major_id].find(pkg.minor_id)!=recv_pkg[pkg.major_id].end()){//重复包
+                return;
+            }else{
+                if(recv_pkg[pkg.major_id].size()==pkg.pk_num-1){//完整一帧
+                    buffer_mutex.lock();
+                    will_show=buffer[pkg.major_id];
+                    buffer.remove(pkg.major_id);
+                    buffer_mutex.unlock();
+                    recv_pkg.remove(pkg.major_id);
+                    will_show.push_back(pkg);
                     has_show=true;
+                }else{
+                    buffer_mutex.lock();
+                    buffer[pkg.major_id].push_back(pkg);
+                    buffer_mutex.unlock();
+                    recv_pkg[pkg.major_id].insert(pkg.minor_id);
                 }
-                break;
             }
+        }else{
+            has_find=false;
         }
     }
     if(!has_find){
-        Frame t_frame;
-        t_frame.push_back(pkg);
-        buffer.push_back(t_frame);
+        buffer_mutex.lock();
+        buffer[pkg.major_id].push_back(pkg);
+        buffer_mutex.unlock();
+        recv_pkg[pkg.major_id].insert(pkg.minor_id);
     }
-    buffer_mutex.unlock();
+
     if(has_show){
         show_frame(will_show);
     }
@@ -92,16 +92,31 @@ void PicShow::show_frame(const Frame &frame){
         qDebug()<<"last Null && not full";
         return;
     }
+    if(data_pkg.rect.size()!=data_pkg.pixmap.size()){
+        qDebug()<<"size error";
+        return;
+    }
     if(last_pixmap.isNull()||data_pkg.full==1){
         last_pixmap=data_pkg.pixmap;
     }else{
         QPainter painter(&last_pixmap);
         painter.drawPixmap(data_pkg.rect,data_pkg.pixmap);
+
+        /*
+        QImage img=last_pixmap.copy(data_pkg.rect).toImage();
+        QImage mask_img=data_pkg.pixmap.toImage();
+        for(int i=0;i<img.height();++i){
+            for(int j=0;j<img.width();++j){
+                img.setPixel(j,i,img.pixel(j,i)^mask_img.pixel(j,i));
+            }
+        }
+        painter.drawPixmap(data_pkg.rect,QPixmap::fromImage(img));
+        */
+
     }
     //TODO 添加鼠标
     QPixmap tmp_pixmap=last_pixmap.scaled(ui->show_lab->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation);
     ui->show_lab->setPixmap(tmp_pixmap);
-    qDebug()<<"显示一个Frame";
 }
 
 Data_Package PicShow::recover_to_data_pkg(const Frame &frame){

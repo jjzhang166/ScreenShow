@@ -25,8 +25,8 @@ void Sock::on_error(QAbstractSocket::SocketError){
 bool Sock::init(){
     if(!bind(local_addr,listen_port,QUdpSocket::ShareAddress))
         return false;
-    if(!joinMulticastGroup(multicastAddress))
-        return false;
+    //if(!joinMulticastGroup(multicastAddress))
+    //    return false;
     //setSocketOption(QAbstractSocket::MulticastLoopbackOption, 0);
     return true;
 }

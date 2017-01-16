@@ -2,13 +2,14 @@
 #define SOCK_H
 #include <QUdpSocket>
 #include <QHostAddress>
+#include <globalfunc.h>
 
 class Sock : public QUdpSocket
 {
     Q_OBJECT
 
 private:
-    QHostAddress multicastAddress{"224.0.0.17"};
+    QHostAddress multicastAddress{CAST_ADDR};
     QHostAddress local_addr;
     quint16 listen_port;
 
