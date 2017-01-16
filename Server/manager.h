@@ -11,6 +11,7 @@
 #include <globalfunc.h>
 
 
+
 class Manager : public QWidget
 {
     Q_OBJECT

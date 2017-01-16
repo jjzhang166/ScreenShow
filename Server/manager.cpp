@@ -186,3 +186,4 @@ QPixmap Manager::get_update(const QPixmap &pix1, const QPixmap &pix2, QRect &rec
 
     return pix2.copy(rect);
 }
+

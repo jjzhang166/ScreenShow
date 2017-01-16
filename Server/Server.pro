@@ -30,3 +30,11 @@ DEPENDPATH += $$PWD/../libs/zlib/include
 
 win32:!win32-g++: PRE_TARGETDEPS += $$PWD/../libs/zlib/library/zlibstatic.lib
 else:win32-g++: PRE_TARGETDEPS += $$PWD/../libs/zlib/library/libzlibstatic.a
+
+win32: LIBS += -L$$PWD/../libs/openh264/lib/ -ldecoder
+
+INCLUDEPATH += $$PWD/../libs/openh264/include
+DEPENDPATH += $$PWD/../libs/openh264/include
+
+win32:!win32-g++: PRE_TARGETDEPS += $$PWD/../libs/openh264/lib/decoder.lib
+else:win32-g++: PRE_TARGETDEPS += $$PWD/../libs/openh264/lib/libdecoder.a

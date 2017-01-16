@@ -1,4 +1,12 @@
 #include <globalfunc.h>
+#include <QBuffer>
+#include <codec_api.h>
+#include <codec_def.h>
+#include <QVideoFrame>
+#include <cassert>
+
+
+#define YUV_BUF_SIZE 1024*1024
 
 QByteArray compress(const QByteArray &src){
     QByteArray ret;
@@ -16,4 +24,8 @@ QByteArray uncompress(const QByteArray &src){
     uncompress(static_cast<Bytef*>(static_cast<void*>(ret.data())),&destlen,static_cast<const Bytef*>(static_cast<const void*>(src.data())),src.size());
     ret.resize(destlen);
     return ret;
+}
+
+QByteArray codec_pixmap(const QPixmap &pixmap){
+
 }

@@ -5,7 +5,7 @@
 #include <QRect>
 #include <QPixmap>
 
-#define DATA_BUFFER_LEN 450
+#define DATA_BUFFER_LEN 1400
 
 struct Package{
     unsigned char major_id;

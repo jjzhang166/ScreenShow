@@ -3,6 +3,8 @@
 
 #include "zlib.h"
 #include <QByteArray>
+#include <QPixmap>
+
 
 #define MAX_BUFFER_SIZE 20
 #define MAX_ZLIB_BUFFER 1024*1024*2
@@ -15,5 +17,6 @@
 
 QByteArray compress(const QByteArray &src);
 QByteArray uncompress(const QByteArray &src);
+QByteArray codec_pixmap(const QPixmap& pixmap);
 
 #endif // GLOBALFUNC_H
