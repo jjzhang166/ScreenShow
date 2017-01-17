@@ -46,7 +46,7 @@ Frame Manager::make_frame(const Data_Package &data_pkg){
     QByteArray ba;
     QBuffer buf(&ba);
     buf.open(QIODevice::WriteOnly);
-    data_pkg.pixmap.save(&buf,"JPEG",20);
+    data_pkg.pixmap.save(&buf,"JPEG",IMG_QUALITY);
     buf.close();
     QByteArray header;
     QBuffer header_buf(&header);
@@ -98,19 +98,20 @@ void Manager::start_cap(){
         buffer_mutex.lock();
         if(buffer.size()>MAX_BUFFER_SIZE){
             buffer_mutex.unlock();
-            QThread::yieldCurrentThread();
+            QThread::msleep(CAP_SLEEP);
             continue;
         }
         buffer_mutex.unlock();
-        Frame t_frame{make_frame(get_desktop_img((n=(n+1)%50)==0))};
+        Frame t_frame{make_frame(get_desktop_img((n=(n+1)%FULL_SCREEN_TIME)==0))};
         buffer_mutex.lock();
         if(buffer.size()>MAX_BUFFER_SIZE){
             buffer_mutex.unlock();
-            QThread::yieldCurrentThread();
+            QThread::msleep(CAP_SLEEP);
             return;
         }
         buffer.push_back(t_frame);
         buffer_mutex.unlock();
+        QThread::msleep(CAP_SLEEP);
     }
 }
 
