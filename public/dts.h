@@ -16,20 +16,7 @@ struct Package{
     unsigned char data[DATA_BUFFER_LEN];
 }__attribute__ ((aligned(1)));
 
-struct Data_Package{
-    char full;
-    QPoint pos;
-    Qt::CursorShape shape;
-    QSize pic_size;
-    QByteArray bytedata;
-}__attribute__ ((aligned(1)));
-
-struct Data_Package_Without_Pixmap{
-    char full;
-    QPoint pos;
-    Qt::CursorShape shape;
-}__attribute__ ((aligned(1)));
-
+using Data_Package=QByteArray;
 using Frame=QList<Package>;
 using SendBuffer=QList<Frame>;
 using RecvBuffer=QMap<unsigned int,Frame>;

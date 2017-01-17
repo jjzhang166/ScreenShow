@@ -1,7 +1,5 @@
 #include <globalfunc.h>
 #include <QBuffer>
-#include <codec_api.h>
-#include <codec_def.h>
 #include <cassert>
 
 

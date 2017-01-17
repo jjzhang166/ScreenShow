@@ -31,3 +31,7 @@ DEPENDPATH += $$PWD/../libs/zlib/include
 win32:!win32-g++: PRE_TARGETDEPS += $$PWD/../libs/zlib/library/zlibstatic.lib
 else:win32-g++: PRE_TARGETDEPS += $$PWD/../libs/zlib/library/libzlibstatic.a
 
+win32: LIBS += -L$$PWD/../libs/ffmpeg/lib/ -lavcodec.dll -lavformat.dll -lavutil.dll -lswscale.dll
+
+INCLUDEPATH += $$PWD/../libs/ffmpeg/include
+DEPENDPATH += $$PWD/../libs/ffmpeg/include

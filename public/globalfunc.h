@@ -12,8 +12,12 @@
 #define FULL_SCREEEN_COUNT 100
 #define DISTENCE 10
 #define QUALITY 20
-#define CAP_SLEEP 20
+#define CAP_SLEEP 30
 #define IMG_FORMAT "JPEG"
+#define SEND_SLEEP 1
+#define SCALE_NUM 1.5
+
+#define COMPRESS_DATA
 
 QByteArray compress(const QByteArray &src);
 QByteArray uncompress(const QByteArray &src);

@@ -9,9 +9,16 @@
 #include <QTimer>
 #include <QMutex>
 #include <globalfunc.h>
-#include <codec_api.h>
 
+extern "C"{
 
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+#include <libavutil/opt.h>
+#include <libavutil/imgutils.h>
+
+}
 
 class Manager : public QWidget
 {
@@ -22,8 +29,17 @@ private:
     QHostAddress mcast_addr{CAST_ADDR};
     QHostAddress local_addr;
     quint16 m_port;
-    ISVCEncoder *encoder_;
-    bool init_encoder(int width, int height);
+
+    AVFrame *av_frame;
+    AVPacket* pkt;
+    AVCodec *codec;
+    AVCodecContext *codec_context;
+
+    QSize video_size;
+
+
+
+    bool init_encoder();
     QByteArray encode_pixmap(const QPixmap &pixmap);
     void uninit_encoder();
 public:

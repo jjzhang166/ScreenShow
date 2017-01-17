@@ -5,7 +5,17 @@
 #include <sock.h>
 #include <dts.h>
 #include <QMutex>
-#include <codec_api.h>
+
+extern "C"{
+
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+#include <libavutil/opt.h>
+#include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
+
+}
 
 namespace Ui {
 class PicShow;
@@ -21,12 +31,16 @@ private:
     quint16 listen_port;
     RecvBuffer buffer;
     QMutex buffer_mutex;
-    ISVCDecoder *pSvcDecoder;
     QMap<unsigned char,QSet<unsigned int>> recv_pkg;
+
+    AVFrame *frame;
+    AVPacket* pkt;
+    AVCodec *codec;
+    AVCodecContext *codec_context;
 
     bool init_decoder();
     void uninit_decoder();
-    QPixmap decode_pixmap(const QByteArray &data, const QSize &pic_size);
+    QPixmap decode_pixmap(const QByteArray &data);
 public:
     explicit PicShow(QHostAddress ip, quint16 port,QWidget *parent = 0);
     ~PicShow();
