@@ -30,3 +30,4 @@ DEPENDPATH += $$PWD/../libs/zlib/include
 
 win32:!win32-g++: PRE_TARGETDEPS += $$PWD/../libs/zlib/library/zlibstatic.lib
 else:win32-g++: PRE_TARGETDEPS += $$PWD/../libs/zlib/library/libzlibstatic.a
+

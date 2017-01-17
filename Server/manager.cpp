@@ -7,11 +7,19 @@
 #include <QScreen>
 #include <globalfunc.h>
 #include <QBitmap>
+#include <cassert>
 
 
 Manager::Manager(QHostAddress ip, quint16 port, QWidget *parent) : QWidget(parent),local_addr(ip),m_port(port)
 {
     hide();
+    int desk_w=QApplication::desktop()->width();
+    int desk_h=QApplication::desktop()->height();
+    if(!init_encoder(desk_w,desk_h)){
+        qDebug()<<"encoder error";
+        exit(0);
+    }
+
     std::thread(
                 [this](){
         Sock m_sock(this->local_addr);
@@ -32,29 +40,31 @@ Manager::Manager(QHostAddress ip, quint16 port, QWidget *parent) : QWidget(paren
                     QThread::usleep(1);
                     m_sock.writeDatagram(static_cast<char*>(static_cast<void*>(&p)),sizeof(Package),QHostAddress::Broadcast,this->m_port);
                 }
+                qDebug()<<"Send a frame";
             }
             QThread::yieldCurrentThread();
         }
     }
-
                 ).detach();
+
+
+
+
     start_cap();
 }
 
 Frame Manager::make_frame(const Data_Package &data_pkg){
     static unsigned char mj_id=0;
+    if(data_pkg.bytedata.isEmpty()){
+        return Frame{};
+    }
     mj_id=mj_id==255?0:mj_id+1;
-    QByteArray ba;
-    QBuffer buf(&ba);
-    buf.open(QIODevice::WriteOnly);
-    data_pkg.pixmap.save(&buf,IMG_FORMAT,QUALITY);
-    buf.close();
     QByteArray header;
     QBuffer header_buf(&header);
     header_buf.open(QIODevice::WriteOnly);
     header_buf.write(static_cast<const char*>(static_cast<const void*>(&data_pkg)),sizeof(Data_Package_Without_Pixmap));
     header_buf.close();
-    ba=header+ba;
+    QByteArray ba=header+data_pkg.bytedata;
     ba=compress(ba);
     size_t block_num=(ba.size()+(DATA_BUFFER_LEN-1))/DATA_BUFFER_LEN;
     Package tmp_pkg;
@@ -71,26 +81,17 @@ Frame Manager::make_frame(const Data_Package &data_pkg){
     return ret;
 }
 
-Data_Package Manager::get_desktop_img(int full){
+Data_Package Manager::get_desktop_img(){
     QPixmap pixmap{QApplication::primaryScreen()->grabWindow(0)};
     Data_Package header;
     header.pos=cursor().pos();
     header.shape=cursor().shape();
-    if(full||last_pixmap.size()!=pixmap.size()){
-        header.full=1;
-        header.pixmap=pixmap;
-        header.rect=pixmap.rect();
-        last_pixmap=pixmap;
-        return header;
-    }
-    header.full=0;
-    header.pixmap=get_update(last_pixmap,pixmap,header.rect);
-    last_pixmap=pixmap;
+    header.pic_size=pixmap.size();
+    header.bytedata=encode_pixmap(pixmap);
     return header;
 }
 
 void Manager::start_cap(){
-    static int n=-1;
     while(true){
         buffer_mutex.lock();
         if(buffer.size()>MAX_BUFFER_SIZE){
@@ -99,7 +100,10 @@ void Manager::start_cap(){
             continue;
         }
         buffer_mutex.unlock();
-        Frame t_frame{make_frame(get_desktop_img((n=(n+1)%FULL_SCREEEN_COUNT)==0))};
+        Frame t_frame{make_frame(get_desktop_img())};
+        if(t_frame.isEmpty()){
+            continue;
+        }
         buffer_mutex.lock();
         if(buffer.size()>MAX_BUFFER_SIZE){
             buffer_mutex.unlock();
@@ -112,78 +116,19 @@ void Manager::start_cap(){
     }
 }
 
-QPixmap Manager::get_update(const QPixmap &pix1, const QPixmap &pix2, QRect &rect){
-    if(pix1.size()!=pix2.size()){
-        rect=pix2.rect();
-        return pix2;
-    }
-
-    QImage img1=pix1.toImage();
-    QImage img2=pix2.toImage();
-
-    auto sz=img1.size();
-    int top_point{0};
-    int left_point{0};
-    int bottom_point{0};
-    int right_point{0};
-
-    for(int i=DISTENCE;i<img1.height();i+=DISTENCE){
-        for(int j=DISTENCE;j<sz.width();j+=DISTENCE){
-            if(img1.pixel(j,i)!=img2.pixel(j,i)){
-                top_point=i-DISTENCE;
-                left_point=j-DISTENCE;
-                goto top_over;
-            }
-        }
-    }
-    top_over:
-    for(int i=DISTENCE;i<left_point;i+=DISTENCE){
-        for(int j=sz.height()-DISTENCE;j>=0;j-=DISTENCE){
-            if(img1.pixel(i,j)!=img2.pixel(i,j)){
-                left_point=i-DISTENCE;
-                bottom_point=j+DISTENCE;
-                goto left_over;
-            }
-        }
-    }
-    left_over:
-    for(int i=sz.height()-DISTENCE;i>=bottom_point;i-=DISTENCE){
-        for(int j=sz.width()-DISTENCE;j>=0;j-=DISTENCE){
-            if(img1.pixel(j,i)!=img2.pixel(j,i)){
-                bottom_point=i;
-                right_point=j;
-                goto bottom_over;
-            }
-        }
-    }
-    bottom_over:
-    for(int i=sz.width()-DISTENCE;i>=right_point;i-=DISTENCE){
-        for(int j=DISTENCE;j<sz.height();j+=DISTENCE){
-            if(img1.pixel(i,j)!=img2.pixel(i,j)){
-                right_point=i+DISTENCE;
-                top_point=top_point>j?j:top_point;
-                goto right_over;
-            }
-        }
-    }
-    right_over:
-    if(top_point>=bottom_point||left_point>=right_point){
-        rect=QRect{0,0,0,0};
-        return QPixmap{};
-    }
-    rect=QRect{left_point,top_point,right_point-left_point,bottom_point-top_point};
-
-    /*
-    auto img1_rect=img1.copy(rect);
-    auto img2_rect=img2.copy(rect);
-    for(int i=0;i<img1_rect.height();++i){
-        for(int j=0;j<img1_rect.width();++j){
-            img1_rect.setPixel(j,i,img1_rect.pixel(j,i)^img2_rect.pixel(j,i));
-
-        }
-    }
-    */
-
-    return pix2.copy(rect);
+Manager::~Manager(){
+    uninit_encoder();
 }
 
+bool Manager::init_encoder(int width,int height){
+
+}
+
+QByteArray Manager::encode_pixmap(const QPixmap &pixmap){
+
+}
+
+
+void Manager::uninit_encoder(){
+
+}

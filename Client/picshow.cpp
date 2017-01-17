@@ -12,11 +12,16 @@ PicShow::PicShow(QHostAddress ip, quint16 port, QWidget *parent) :
     ui(new Ui::PicShow)
 {
     ui->setupUi(this);
+    if(!init_decoder()){
+        qDebug()<<"init decoder error";
+        exit(0);
+    }
     connect(&m_sock,SIGNAL(readyRead()),this,SLOT(on_read()));
 }
 
 PicShow::~PicShow()
 {
+    uninit_decoder();
     delete ui;
 }
 
@@ -83,40 +88,21 @@ void PicShow::add_package_and_show(const Package &pkg){
 }
 
 void PicShow::show_frame(const Frame &frame){
-    Data_Package data_pkg{recover_to_data_pkg(frame)};
-    if(data_pkg.pixmap.isNull()){
-        qDebug()<<"pixmap Null";
-        return;
-    }
-    if(last_pixmap.isNull()&&data_pkg.full==0){
-        qDebug()<<"last Null && not full";
-        return;
-    }
-    if(data_pkg.rect.size()!=data_pkg.pixmap.size()){
-        qDebug()<<"size error";
-        return;
-    }
-    if(last_pixmap.isNull()||data_pkg.full==1){
-        last_pixmap=data_pkg.pixmap;
-    }else{
-        QPainter painter(&last_pixmap);
-        painter.drawPixmap(data_pkg.rect,data_pkg.pixmap);
-
-        /*
-        QImage img=last_pixmap.copy(data_pkg.rect).toImage();
-        QImage mask_img=data_pkg.pixmap.toImage();
-        for(int i=0;i<img.height();++i){
-            for(int j=0;j<img.width();++j){
-                img.setPixel(j,i,img.pixel(j,i)^mask_img.pixel(j,i));
-            }
-        }
-        painter.drawPixmap(data_pkg.rect,QPixmap::fromImage(img));
-        */
-
-    }
+    /*
     //TODO 添加鼠标
     QPixmap tmp_pixmap=last_pixmap.scaled(ui->show_lab->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation);
     ui->show_lab->setPixmap(tmp_pixmap);
+    */
+    Data_Package pkg=recover_to_data_pkg(frame);
+    if(pkg.bytedata.isEmpty())
+        return;
+    QPixmap pixmap=decode_pixmap(pkg.bytedata,pkg.pic_size);
+    if(pixmap.isNull()){
+        qDebug()<<"pixmap is null";
+        return;
+    }
+    pixmap.scaled(ui->show_lab->size());
+    ui->show_lab->setPixmap(pixmap);
 }
 
 Data_Package PicShow::recover_to_data_pkg(const Frame &frame){
@@ -130,6 +116,20 @@ Data_Package PicShow::recover_to_data_pkg(const Frame &frame){
 
     Data_Package data_pkg;
     memmove_s(&data_pkg,sizeof(Data_Package_Without_Pixmap),ba.data(),sizeof(Data_Package_Without_Pixmap));
-    data_pkg.pixmap.loadFromData(ba.right(ba.size()-sizeof(Data_Package_Without_Pixmap)));
+    data_pkg.bytedata=ba.right(ba.size()-sizeof(Data_Package_Without_Pixmap));
     return data_pkg;
+}
+
+
+QPixmap PicShow::decode_pixmap(const QByteArray &data,const QSize &pic_size){
+
+}
+
+bool PicShow::init_decoder(){
+
+}
+
+
+void PicShow::uninit_decoder(){
+
 }

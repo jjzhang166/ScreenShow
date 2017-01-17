@@ -20,15 +20,14 @@ struct Data_Package{
     char full;
     QPoint pos;
     Qt::CursorShape shape;
-    QRect rect;
-    QPixmap pixmap;
+    QSize pic_size;
+    QByteArray bytedata;
 }__attribute__ ((aligned(1)));
 
 struct Data_Package_Without_Pixmap{
     char full;
     QPoint pos;
     Qt::CursorShape shape;
-    QRect rect;
 }__attribute__ ((aligned(1)));
 
 using Frame=QList<Package>;

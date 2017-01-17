@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QMutex>
 #include <globalfunc.h>
+#include <codec_api.h>
 
 
 
@@ -21,13 +22,16 @@ private:
     QHostAddress mcast_addr{CAST_ADDR};
     QHostAddress local_addr;
     quint16 m_port;
-    QPixmap last_pixmap;
+    ISVCEncoder *encoder_;
+    bool init_encoder(int width, int height);
+    QByteArray encode_pixmap(const QPixmap &pixmap);
+    void uninit_encoder();
 public:
     explicit Manager(QHostAddress ip, quint16 port, QWidget *parent = 0);
+    ~Manager();
     Frame make_frame(const Data_Package &data_pkg);
-    Data_Package get_desktop_img(int full);
+    Data_Package get_desktop_img();
     void start_cap();
-    QPixmap get_update(const QPixmap &pix1,const QPixmap &pix2,QRect &rect);
 signals:
 
 public slots:

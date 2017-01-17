@@ -17,6 +17,5 @@
 
 QByteArray compress(const QByteArray &src);
 QByteArray uncompress(const QByteArray &src);
-QByteArray codec_pixmap(const QPixmap& pixmap);
 
 #endif // GLOBALFUNC_H

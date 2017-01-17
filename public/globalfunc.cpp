@@ -2,7 +2,6 @@
 #include <QBuffer>
 #include <codec_api.h>
 #include <codec_def.h>
-#include <QVideoFrame>
 #include <cassert>
 
 
@@ -24,8 +23,4 @@ QByteArray uncompress(const QByteArray &src){
     uncompress(static_cast<Bytef*>(static_cast<void*>(ret.data())),&destlen,static_cast<const Bytef*>(static_cast<const void*>(src.data())),src.size());
     ret.resize(destlen);
     return ret;
-}
-
-QByteArray codec_pixmap(const QPixmap &pixmap){
-
 }
