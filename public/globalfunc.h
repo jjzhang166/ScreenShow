@@ -15,7 +15,9 @@
 #define CAP_SLEEP 30
 #define IMG_FORMAT "JPEG"
 #define SEND_SLEEP 1
-#define SCALE_NUM 1.5
+#define SCALE_NUM 3
+
+#define TRANS_FORMAT AV_CODEC_ID_WEBP
 
 #define COMPRESS_DATA
 

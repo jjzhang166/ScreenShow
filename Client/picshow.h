@@ -33,6 +33,8 @@ private:
     QMutex buffer_mutex;
     QMap<unsigned char,QSet<unsigned int>> recv_pkg;
 
+    QPixmap last_pixmap;
+
     AVFrame *frame;
     AVPacket* pkt;
     AVCodec *codec;

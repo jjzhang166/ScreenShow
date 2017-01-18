@@ -102,9 +102,13 @@ void PicShow::show_frame(const Frame &frame){
         qDebug()<<"pixmap is null";
         return;
     }
-    ui->show_lab->clear();
-
-    ui->show_lab->setPixmap(pixmap.scaled(ui->show_lab->size()));
+    if(last_pixmap.isNull()){
+        last_pixmap=pixmap;
+    }else{
+        QPainter painter(&last_pixmap);
+        painter.drawImage(0,0,pixmap.toImage());
+    }
+    ui->show_lab->setPixmap(last_pixmap.scaled(ui->show_lab->size()));
 }
 
 Data_Package PicShow::recover_to_data_pkg(const Frame &frame){
@@ -121,6 +125,7 @@ Data_Package PicShow::recover_to_data_pkg(const Frame &frame){
 
 
 QPixmap PicShow::decode_pixmap(const QByteArray &data){
+    av_init_packet(pkt);
     int nread = data.size();
     if(nread <= 0)
         return QPixmap{};
@@ -167,7 +172,7 @@ bool PicShow::init_decoder(){
     pkt = new AVPacket;
     av_init_packet(pkt);
     //memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-    codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+    codec = avcodec_find_decoder(TRANS_FORMAT);
     if (!codec){
         return false;
     }
@@ -187,9 +192,6 @@ bool PicShow::init_decoder(){
     if (!frame) {
         return false;
     }
-    pkt->data=NULL;
-    pkt->size = 1000000;
-    av_init_packet(pkt);
     return true;
 }
 

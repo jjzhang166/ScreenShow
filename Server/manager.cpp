@@ -114,7 +114,7 @@ bool Manager::init_encoder(){
     avcodec_register_all();
     codec_context= NULL;
     pkt = new AVPacket;
-    codec = avcodec_find_encoder(AV_CODEC_ID_H264);
+    codec = avcodec_find_encoder(TRANS_FORMAT);
     if (codec == 0)  {
         qDebug()<<"avcodec_find_encoder";
         return false;
