@@ -7,9 +7,6 @@
 #include <QScreen>
 #include <globalfunc.h>
 
-#define DISTENCE 5
-
-
 Manager::Manager(QHostAddress ip, quint16 port, QWidget *parent) : QWidget(parent),local_addr(ip),m_port(port)
 {
     hide();
@@ -27,10 +24,8 @@ Manager::Manager(QHostAddress ip, quint16 port, QWidget *parent) : QWidget(paren
             if(!t_frame.isEmpty()){
                 for(auto &p:t_frame){
                     QThread::usleep(1);
-                    qDebug()<<p.major_id<<p.minor_id<<p.pk_num<<p.curr_length;
                     m_sock.writeDatagram(static_cast<char*>(static_cast<void*>(&p)),sizeof(Package),this->mcast_addr,this->m_port);
                 }
-                qDebug()<<"发送一个Frame";
             }
             QThread::yieldCurrentThread();
         }
@@ -46,7 +41,7 @@ Frame Manager::make_frame(const Data_Package &data_pkg){
     QByteArray ba;
     QBuffer buf(&ba);
     buf.open(QIODevice::WriteOnly);
-    data_pkg.pixmap.save(&buf,"JPEG",IMG_QUALITY);
+    data_pkg.pixmap.save(&buf,TRANS_FORMAT,IMG_QUALITY);
     buf.close();
     QByteArray header;
     QBuffer header_buf(&header);
@@ -54,10 +49,7 @@ Frame Manager::make_frame(const Data_Package &data_pkg){
     header_buf.write(static_cast<const char*>(static_cast<const void*>(&data_pkg)),sizeof(Data_Package_Without_Pixmap));
     header_buf.close();
     ba=header+ba;
-    qDebug()<<"before "<<ba.size();
     ba=compress(ba);
-    qDebug()<<"after "<<ba.size();
-
     size_t block_num=(ba.size()+(DATA_BUFFER_LEN-1))/DATA_BUFFER_LEN;
     Package tmp_pkg;
     Frame ret;
@@ -75,7 +67,18 @@ Frame Manager::make_frame(const Data_Package &data_pkg){
 
 Data_Package Manager::get_desktop_img(int full){
     QPixmap pixmap{QApplication::primaryScreen()->grabWindow(0)};
-    qDebug()<<"Screen "<<pixmap.size();
+
+
+    QByteArray compress_buffer;
+    QBuffer compress_buffer_writer(&compress_buffer);
+    compress_buffer_writer.open(QIODevice::WriteOnly);
+    pixmap.save(&compress_buffer_writer,"JPEG",IMG_QUALITY);
+    compress_buffer_writer.close();
+    pixmap.loadFromData(compress_buffer);
+
+
+    pixmap=pixmap.scaled(pixmap.size()*IMG_SIZE/100);
+
     Data_Package header;
     header.pos=cursor().pos();
     header.shape=cursor().shape();
@@ -173,5 +176,18 @@ QPixmap Manager::get_update(const QPixmap &pix1, const QPixmap &pix2, QRect &rec
         return QPixmap{};
     }
     rect=QRect{left_point,top_point,right_point-left_point,bottom_point-top_point};
+
+#ifdef XOR_COMPRESS
+    QImage img1_cp=img1.copy(rect);
+    QImage img2_cp=img2.copy(rect);
+    QImage img3(rect.size(),img1.format());
+    for(int i=0;i<img1_cp.width();++i){
+        for(int j=0;j<img2_cp.height();++j){
+            img3.setPixel(i,j,img1_cp.pixel(i,j)^img2_cp.pixel(i,j));
+        }
+    }
+    return QPixmap::fromImage(img3);
+#else
     return pix2.copy(rect);
+#endif
 }

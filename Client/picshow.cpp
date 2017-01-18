@@ -95,10 +95,25 @@ void PicShow::show_frame(const Frame &frame){
     if(last_pixmap.isNull()||data_pkg.full==1){
         last_pixmap=data_pkg.pixmap;
     }else{
+#ifdef XOR_COMPRESS
+        QImage img1=last_pixmap.copy(data_pkg.rect).toImage();
+        QImage img2=data_pkg.pixmap.toImage();
+        QImage img3(data_pkg.rect.size(),img1.format());
+        for(int i=0;i<img1.width();++i){
+            for(int j=0;j<img1.height();++j){
+                img3.setPixel(i,j,img1.pixel(i,j)^img2.pixel(i,j));
+            }
+        }
+
+        QPainter painter(&last_pixmap);
+        painter.drawPixmap(data_pkg.rect,QPixmap::fromImage(img3));
+#else
         QPainter painter(&last_pixmap);
         painter.drawPixmap(data_pkg.rect,data_pkg.pixmap);
+#endif
     }
     //TODO 添加鼠标
+
     QPixmap tmp_pixmap=last_pixmap.scaled(ui->show_lab->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation);
     ui->show_lab->setPixmap(tmp_pixmap);
     qDebug()<<"显示一个Frame";
